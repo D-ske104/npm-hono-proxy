@@ -8,8 +8,6 @@ Hono + AWS Lambda（Function URL, RESPONSE_STREAM）で動作する npm Registry
 - 環境変数とパスプレフィックスで隔離期間を柔軟制御
 
 ## デプロイ（CDK）
-```zsh
-## デプロイ（CDK）
 
 CloudFront + Route53 + 既存 ACM 証明書 (us-east-1) を前提にしています。証明書は手動で発行し ARN を環境変数 `CERT_ARN` に渡します。
 
