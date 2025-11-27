@@ -74,8 +74,7 @@ npx cdk deploy
 ```ini
 registry=https://npm.example.com/
 ```
-`.npmrc` に Function URL を設定します。
-```ini
+
 ### 隔離期間指定（パス方式）
 単位ごとの 3 つのプレフィックスを用意し、同時利用や合成は不可（いずれか 1 つのみ）。
 
