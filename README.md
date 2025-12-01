@@ -35,7 +35,7 @@ node dist/index.mjs
 |---|---|---|---|---|
 | ポート番号 | `PORT` | `--port=<number>` | `4873` | ローカルサーバの待受ポート |
 | 隔離有効化 | `QUARANTINE_ENABLED` | `--quarantine-enabled=<true|false>` | `true` | 隔離ロジックのオン/オフ |
-| 隔離日数 | `QUARANTINE_DAYS` | `--quarantine-days=<number>` | `21` | `latest` が公開から何日経過すれば安全とみなすか |
+| 隔離期間（分） | `QUARANTINE_MINUTES` | `--quarantine-minutes=<number>` | `30240` | 公開から何分経過すれば安全とみなすか |
 | 安全版なし時ポリシー | `QUARANTINE_POLICY_ON_NO_SAFE` | `--quarantine-policy-on-no-safe=<set-safe|fail>` | `set-safe` | `set-safe`: 安全版があれば `latest` を安全版へ、なければ `latest` を削除。`fail`: 409 を返して失敗 |
 | 詳細ログ | `VERBOSE` | `--verbose=<true|false>` | `false` | 詳細ログを有効化（初期レベルは `info` 相当） |
 | ログレベル | `LOG_LEVEL` | `--log-level=<info|warn|error|silent>` | `warn`（`VERBOSE=true` 時は `info`） | 出力する最小レベルを制御 |
@@ -48,7 +48,7 @@ node dist/index.mjs
 node dist/index.mjs \
   --port=5000 \
   --quarantine-enabled=true \
-  --quarantine-days=14 \
+  --quarantine-minutes=20160 \
   --quarantine-policy-on-no-safe=set-safe \
   --verbose=true \
   --log-level=info \
@@ -59,7 +59,7 @@ node dist/index.mjs \
 例（環境変数）:
 
 ```zsh
-PORT=5000 QUARANTINE_ENABLED=false QUARANTINE_DAYS=30 QUARANTINE_POLICY_ON_NO_SAFE=set-safe \
+PORT=5000 QUARANTINE_ENABLED=false QUARANTINE_MINUTES=43200 QUARANTINE_POLICY_ON_NO_SAFE=set-safe \
   VERBOSE=true LOG_LEVEL=info LOG_FORMAT=text UPSTREAM=https://registry.npmjs.org node dist/index.mjs
 ```
 
@@ -71,7 +71,7 @@ PORT=5000 QUARANTINE_ENABLED=false QUARANTINE_DAYS=30 QUARANTINE_POLICY_ON_NO_SA
 npx npm-hono-proxy \
   --port=4873 \
   --quarantine-enabled=true \
-  --quarantine-days=21 \
+  --quarantine-minutes=30240 \
   --quarantine-policy-on-no-safe=set-safe \
   --log-level=info \
   --log-format=text \
@@ -87,7 +87,7 @@ npm i -g npm-hono-proxy
 npm-hono-proxy \
   --port=4873 \
   --quarantine-enabled=true \
-  --quarantine-days=21 \
+  --quarantine-minutes=30240 \
   --quarantine-policy-on-no-safe=set-safe \
   --log-level=warn \
   --log-format=text \

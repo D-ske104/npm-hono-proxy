@@ -6,24 +6,24 @@ export function applyQuarantine(
   distTags: DistTags | undefined,
   timeData: NpmTimeMap | undefined,
   now: Date,
-  days: number,
+  minutesThreshold: number,
   policyOnNoSafe: QuarantineNoSafePolicy = 'set-safe'
 ): void {
   const currentLatestVer: string | undefined = distTags?.latest
   if (!distTags || !timeData || !currentLatestVer || !timeData[currentLatestVer]) return
 
   const publishDate = new Date(timeData[currentLatestVer])
-  const diffDays = (now.getTime() - publishDate.getTime()) / (1000 * 3600 * 24)
+  const diffMinutes = (now.getTime() - publishDate.getTime()) / (1000 * 60)
 
-  if (diffDays < days) {
+  if (diffMinutes < minutesThreshold) {
     // ポリシーにより latest を剥奪。元の最新を 'quarantine-latest' に退避
     distTags['quarantine-latest'] = currentLatestVer
 
     const safeVersions = Object.keys(timeData).filter((v) => {
       if (v === 'created' || v === 'modified') return false
       const pDate = new Date(timeData[v])
-      const dDays = (now.getTime() - pDate.getTime()) / (1000 * 3600 * 24)
-      return dDays >= days
+      const dMinutes = (now.getTime() - pDate.getTime()) / (1000 * 60)
+      return dMinutes >= minutesThreshold
     })
 
     safeVersions.sort((a, b) => {

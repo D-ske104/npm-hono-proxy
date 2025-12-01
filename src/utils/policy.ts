@@ -7,11 +7,11 @@ export type PolicyResult = { blocked: boolean; reason?: string }
 export function applyPolicy(
   data: NpmPackageMeta,
   now: Date,
-  days: number,
+  minutes: number,
   policy: QuarantineNoSafePolicy,
 ): PolicyResult {
   try {
-    applyQuarantine(data['dist-tags'], data.time, now, days, policy)
+    applyQuarantine(data['dist-tags'], data.time, now, minutes, policy)
     return { blocked: false }
   } catch (e) {
     return { blocked: true, reason: e instanceof Error ? e.message : 'policy-error' }
