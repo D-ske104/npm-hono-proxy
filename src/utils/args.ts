@@ -13,3 +13,9 @@ export function parseBool(v: string | undefined, fallback: boolean): boolean {
   if (["0", "false", "no", "off"].includes(t)) return false
   return fallback
 }
+
+export function ensureNonNegativeInt(v: number): number {
+  if (!Number.isFinite(v) || Number.isNaN(v)) return 0
+  if (v < 0) return 0
+  return Math.floor(v)
+}

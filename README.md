@@ -56,6 +56,8 @@ node dist/index.mjs \
   --upstream=https://registry.npmjs.org
 ```
 
+下限バリデーション: `QUARANTINE_MINUTES` が負値または数値変換できない場合は `0` に補正され、隔離処理は無効扱い（公開直後でも書き換えなし）になります。
+
 例（環境変数）:
 
 ```zsh
