@@ -7,6 +7,16 @@
     "dev": "tsx ./src/index.ts",
     "test": "vitest"
   },
+  "bin": {
+    "npm-hono-proxy": "./bin/cli.js"
+  },
+  "files": [
+    "dist",
+    "bin",
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
   "devDependencies": {
     "@types/node": "^22.19.1",
     "tsdown": "^0.16.8",

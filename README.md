@@ -2,6 +2,12 @@
 
 NPM Registry のメタデータだけを安全化するローカルプロキシです。`.tgz` 等の実ファイルは本家へリダイレクトし、`dist-tags` を隔離ポリシーに基づいて書き換えます。
 
+## 起動例
+
+```zsh
+npx npm-hono-proxy
+```
+
 ## セットアップ
 
 ```zsh
@@ -31,6 +37,10 @@ node dist/index.mjs
 | 隔離有効化 | `QUARANTINE_ENABLED` | `--quarantine-enabled=<true|false>` | `true` | 隔離ロジックのオン/オフ |
 | 隔離日数 | `QUARANTINE_DAYS` | `--quarantine-days=<number>` | `21` | `latest` が公開から何日経過すれば安全とみなすか |
 | 安全版なし時ポリシー | `QUARANTINE_POLICY_ON_NO_SAFE` | `--quarantine-policy-on-no-safe=<set-safe|fail>` | `set-safe` | `set-safe`: 安全版があれば `latest` を安全版へ、なければ `latest` を削除。`fail`: 409 を返して失敗 |
+| 詳細ログ | `VERBOSE` | `--verbose=<true|false>` | `false` | 詳細ログを有効化（初期レベルは `info` 相当） |
+| ログレベル | `LOG_LEVEL` | `--log-level=<info|warn|error|silent>` | `warn`（`VERBOSE=true` 時は `info`） | 出力する最小レベルを制御 |
+| ログ形式 | `LOG_FORMAT` | `--log-format=<text|ndjson>` | `text` | `ndjson` で機械可読な 1 行 JSON ログ |
+| 上流レジストリ | `UPSTREAM` | `--upstream=<url>` | `https://registry.npmjs.org` | 取得元の Registry ベースURL（プロキシ先） |
 
 例（CLI 引数）:
 
@@ -39,14 +49,49 @@ node dist/index.mjs \
   --port=5000 \
   --quarantine-enabled=true \
   --quarantine-days=14 \
-  --quarantine-policy-on-no-safe=set-safe
+  --quarantine-policy-on-no-safe=set-safe \
+  --verbose=true \
+  --log-level=info \
+  --log-format=ndjson \
+  --upstream=https://registry.npmjs.org
 ```
 
 例（環境変数）:
 
 ```zsh
 PORT=5000 QUARANTINE_ENABLED=false QUARANTINE_DAYS=30 QUARANTINE_POLICY_ON_NO_SAFE=set-safe \
-  node dist/index.mjs
+  VERBOSE=true LOG_LEVEL=info LOG_FORMAT=text UPSTREAM=https://registry.npmjs.org node dist/index.mjs
+```
+
+例（npx 起動）:
+
+パッケージを `npm publish` 済みの場合、以下で直接起動できます。
+
+```zsh
+npx npm-hono-proxy \
+  --port=4873 \
+  --quarantine-enabled=true \
+  --quarantine-days=21 \
+  --quarantine-policy-on-no-safe=set-safe \
+  --log-level=info \
+  --log-format=text \
+  --upstream=https://registry.npmjs.org
+```
+
+例（グローバルインストール）:
+
+グローバルにインストールしてコマンドとして利用できます。
+
+```zsh
+npm i -g npm-hono-proxy
+npm-hono-proxy \
+  --port=4873 \
+  --quarantine-enabled=true \
+  --quarantine-days=21 \
+  --quarantine-policy-on-no-safe=set-safe \
+  --log-level=warn \
+  --log-format=text \
+  --upstream=https://registry.npmjs.org
 ```
 
 ## 挙動概要
@@ -58,3 +103,31 @@ PORT=5000 QUARANTINE_ENABLED=false QUARANTINE_DAYS=30 QUARANTINE_POLICY_ON_NO_SA
 ## 開発メモ
 
 - ビルドは tsdown を使用し、出力は ESM（`dist/index.mjs`）。
+
+## 利用側の設定例（npm クライアント）
+
+プロキシを起動した後、クライアント側でレジストリを切り替える方法です。ローカルで `http://localhost:4873` に立てた場合を例にします。
+
+- `.npmrc` にレジストリを設定（推奨）
+
+```ini
+registry=http://localhost:4873/
+```
+
+- コマンド単位でレジストリを指定
+
+```zsh
+npm install --registry=http://localhost:4873
+npx --registry=http://localhost:4873 some-package
+```
+
+- パッケージ単位で明示タグ／バージョン指定（隔離と相性が良い）
+
+```zsh
+npm install -D vitest@4
+npm install hono@4.10.7
+```
+
+補足:
+- `.npmrc` の `registry` 設定はユーザー単位（グローバル）やプロジェクト単位（ローカルファイル）で切り替え可能です。
+- スコープ別にレジストリを分けることも可能です（例: `@company:registry=http://localhost:4873/`）。
