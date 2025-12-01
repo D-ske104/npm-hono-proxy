@@ -28,7 +28,6 @@
     "jsxImportSource": "hono/jsx",
   },
   "exclude": [
-    "node_modules",
-    "cdk.out"
+    "node_modules"
   ]
 }

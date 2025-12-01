@@ -1,10 +1,13 @@
 import type { DistTags, NpmTimeMap } from './types/npm'
 
+export type QuarantineNoSafePolicy = 'set-safe' | 'fail'
+
 export function applyQuarantine(
   distTags: DistTags | undefined,
   timeData: NpmTimeMap | undefined,
   now: Date,
-  days: number
+  days: number,
+  policyOnNoSafe: QuarantineNoSafePolicy = 'set-safe'
 ): void {
   const currentLatestVer: string | undefined = distTags?.latest
   if (!distTags || !timeData || !currentLatestVer || !timeData[currentLatestVer]) return
@@ -30,6 +33,11 @@ export function applyQuarantine(
     if (safeVersions.length > 0) {
       distTags.latest = safeVersions[0]
     } else {
+      if (policyOnNoSafe === 'fail') {
+        throw new Error('No safe versions available within quarantine policy')
+      }
+      // 'set-safe' の場合でも安全版がないため、latest を設定できない。
+      // 意図しないインストールを避けるため latest を削除する。
       delete distTags.latest
     }
   }
