@@ -6,11 +6,11 @@ import { createApp } from './app'
 
 const PORT = Number(getArg('port') ?? process.env.PORT ?? '4873')
 const QUARANTINE_ENABLED = parseBool(getArg('quarantine-enabled') ?? process.env.QUARANTINE_ENABLED, true)
-// 隔離期間は分単位で受け取り、そのまま分として利用する
+// 隔離期間は分単位で指定
 const rawQuarantineMinutes = Number(
   getArg('quarantine-minutes') ??
     process.env.QUARANTINE_MINUTES ??
-    // 既定 21 日分の分: 21 * 24 * 60
+    // 既定は 21 日 (21 * 24 * 60 分)
     String(21 * 24 * 60)
 )
 const QUARANTINE_MINUTES = ensureNonNegativeInt(rawQuarantineMinutes)

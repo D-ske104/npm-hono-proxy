@@ -10,8 +10,8 @@ function buildTimeMap(base: Date, offsetsMinutes: Record<string, number>): NpmTi
   return map
 }
 
-describe('applyQuarantine (minutes threshold)', () => {
-  it('最新が閾値未満なら quarantine-latest に退避し安全版へ latest を付け替える', () => {
+describe('applyQuarantine (分単位の閾値)', () => {
+  it('最新バージョンが閾値未満の場合、quarantine-latestに退避し、安全なバージョンにlatestを付け替える', () => {
     const now = new Date('2025-12-01T12:00:00Z')
     const distTags: DistTags = { latest: '3.0.0' }
     const time = buildTimeMap(now, {
@@ -21,11 +21,11 @@ describe('applyQuarantine (minutes threshold)', () => {
     })
     applyQuarantine(distTags, time, now, /*threshold minutes*/ 60, 'set-safe')
     expect(distTags['quarantine-latest']).toBe('3.0.0')
-    // 安全版候補: 2.0.0 (5000m), 1.0.0 (10000m) → 最も新しい安全版は 2.0.0
+    // 安全なバージョンの候補: 2.0.0 (5000分前), 1.0.0 (10000分前) → 最も新しい安全なバージョンは 2.0.0
     expect(distTags.latest).toBe('2.0.0')
   })
 
-  it('安全版が無い場合 set-safe は latest を削除し quarantine-latest のみ残す', () => {
+  it('安全なバージョンがない場合、set-safeポリシーはlatestを削除し、quarantine-latestのみを残す', () => {
     const now = new Date('2025-12-01T12:00:00Z')
     const distTags: DistTags = { latest: '1.2.0' }
     const time = buildTimeMap(now, {
@@ -38,7 +38,7 @@ describe('applyQuarantine (minutes threshold)', () => {
     expect(distTags.latest).toBeUndefined()
   })
 
-  it('安全版が無い場合 fail ポリシーは例外を投げる', () => {
+  it('安全なバージョンがない場合、failポリシーは例外を投げる', () => {
     const now = new Date('2025-12-01T12:00:00Z')
     const distTags: DistTags = { latest: '0.3.0' }
     const time = buildTimeMap(now, {
@@ -49,36 +49,36 @@ describe('applyQuarantine (minutes threshold)', () => {
     expect(() => applyQuarantine(distTags, time, now, 60, 'fail')).toThrow()
   })
 
-  it('閾値以上なら何も変更しない (最新が既に安全)', () => {
+  it('閾値以上の場合、何も変更しない（最新バージョンが既に安全）', () => {
     const now = new Date('2025-12-01T12:00:00Z')
     const distTags: DistTags = { latest: '1.0.0' }
-    const time = buildTimeMap(now, { '1.0.0': 600 }) // 600m > 60m threshold
+    const time = buildTimeMap(now, { '1.0.0': 600 }) // 600分 > 60分の閾値
     applyQuarantine(distTags, time, now, 60, 'set-safe')
     expect(distTags['quarantine-latest']).toBeUndefined()
     expect(distTags.latest).toBe('1.0.0')
   })
 
-  it('dist-tags もしくは time が欠けている場合は何もしない', () => {
+  it('dist-tagsまたはtimeが欠けている場合、何もしない', () => {
     const now = new Date()
     const distTags: DistTags = { latest: '1.0.0' }
     applyQuarantine(distTags, undefined, now, 60, 'set-safe')
     expect(distTags.latest).toBe('1.0.0')
   })
 
-  it('time に不正 ISO 文字列が混在しても不正は除外して判定', () => {
+  it('timeに不正なISO文字列が混在していても、不正なものを除外して判定する', () => {
     const now = new Date('2025-12-01T12:00:00Z')
     const distTags: DistTags = { latest: '2.0.0' }
     const time: NpmTimeMap = {
       '1.0.0': new Date(now.getTime() - 5000 * 60 * 1000).toISOString(),
       '2.0.0': 'invalid-iso',
     }
-    // latest の日時が不正なので隔離はスキップ（何もしない）
+    // latestの日時が不正なため、隔離はスキップされる（何もしない）
     applyQuarantine(distTags, time, now, 60, 'set-safe')
     expect(distTags['quarantine-latest']).toBeUndefined()
     expect(distTags.latest).toBe('2.0.0')
   })
 
-  it('time の created/modified は候補から除外される', () => {
+  it('timeのcreated/modifiedは候補から除外される', () => {
     const now = new Date('2025-12-01T12:00:00Z')
     const distTags: DistTags = { latest: '2.0.0' }
     const time: NpmTimeMap = {
@@ -92,7 +92,7 @@ describe('applyQuarantine (minutes threshold)', () => {
     expect(distTags.latest).toBe('1.0.0')
   })
 
-  it('閾値ちょうどの版は安全（>= は安全）', () => {
+  it('閾値ちょうどのバージョンは安全と見なされる（>=）', () => {
     const now = new Date('2025-12-01T12:00:00Z')
     const distTags: DistTags = { latest: '1.0.0' }
     const time = buildTimeMap(now, { '1.0.0': 60 })
@@ -101,7 +101,7 @@ describe('applyQuarantine (minutes threshold)', () => {
     expect(distTags.latest).toBe('1.0.0')
   })
 
-  it('同一タイムスタンプが複数でも安全版選定は安定', () => {
+  it('複数のバージョンが同じタイムスタンプを持っていても、安全なバージョンの選定は安定している', () => {
     const now = new Date('2025-12-01T12:00:00Z')
     const distTags: DistTags = { latest: '3.0.0' }
     const same = new Date(now.getTime() - 5000 * 60 * 1000).toISOString()
@@ -111,7 +111,7 @@ describe('applyQuarantine (minutes threshold)', () => {
       '3.0.0': new Date(now.getTime() - 30 * 60 * 1000).toISOString(),
     }
     applyQuarantine(distTags, time, now, 60, 'set-safe')
-    // The implementation selects the first of the descending sort (does not depend on key order).
+    // 実装では降順ソートの最初の要素が選択される（キーの順序には依存しない）
     expect(['1.0.0', '2.0.0']).toContain(distTags.latest!)
     expect(distTags['quarantine-latest']).toBe('3.0.0')
   })

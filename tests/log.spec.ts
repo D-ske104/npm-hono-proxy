@@ -2,13 +2,13 @@ import { describe, it, expect } from 'vitest'
 import { shouldLog } from '../src/utils/log'
 
 describe('utils/log.shouldLog', () => {
-  it('warn level should log info (current >= threshold)', () => {
+  it('warnレベルはinfoをログに出力すべき (current >= threshold)', () => {
     expect(shouldLog('warn', 'info')).toBe(true)
   })
-  it('info level should not log warn', () => {
+  it('infoレベルはwarnをログに出力すべきでない', () => {
     expect(shouldLog('info', 'warn')).toBe(false)
   })
-  it('silent never logs', () => {
+  it('silentは何もログに出力しない', () => {
     expect(shouldLog('silent', 'info')).toBe(false)
     expect(shouldLog('silent', 'warn')).toBe(false)
     expect(shouldLog('silent', 'error')).toBe(false)

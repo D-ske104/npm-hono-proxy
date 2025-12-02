@@ -14,11 +14,11 @@ const base: Omit<AppConfig, 'quarantineMinutes'> = {
   logFormat: 'text'
 }
 
-describe('config: quarantineMinutes lower-bound validation', () => {
-  it('treats negative minutes as 0 (no quarantine)', async () => {
+describe('config: quarantineMinutes の下限値バリデーション', () => {
+  it('負の値は0として扱われ、隔離が無効になる', async () => {
     const now = new Date()
     const time = {
-      // 10 分前のバージョン（通常なら threshold 60 未満で隔離対象）
+      // 10分前に公開されたバージョン (通常は60分の閾値未満で隔離対象)
       '1.0.0': new Date(now.getTime() - 10 * 60 * 1000).toISOString()
     }
     const upstreamPayload = { 'dist-tags': { latest: '1.0.0' }, time }
@@ -31,14 +31,14 @@ describe('config: quarantineMinutes lower-bound validation', () => {
     spy.mockRestore()
   })
 
-  it('treats NaN minutes as 0 (no quarantine)', async () => {
+  it('NaNは0として扱われ、隔離が無効になる', async () => {
     const now = new Date()
     const time = {
       '1.0.0': new Date(now.getTime() - 5 * 60 * 1000).toISOString()
     }
     const upstreamPayload = { 'dist-tags': { latest: '1.0.0' }, time }
     const spy = mockUpstream(upstreamPayload)
-    // NaN をわざと渡す
+    // 無効な数値を渡す
     const app = createApp({ ...base, quarantineMinutes: Number('invalid') })
     const res = await app.request('/pkg')
     const body = await res.json()

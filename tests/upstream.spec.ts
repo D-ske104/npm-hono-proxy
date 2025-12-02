@@ -3,7 +3,7 @@ import { fetchUpstream } from '../src/upstream'
 import { getUpstreamBase } from '../src/utils/upstream'
 
 describe('fetchUpstream', () => {
-  it('constructs URL with base and path', async () => {
+  it('ベースURLとパスでURLを構築する', async () => {
     const base = 'https://example.com'
     const path = '/lodash'
     const mockRes = new Response('{}', { headers: { 'content-type': 'application/json' } })
@@ -17,11 +17,11 @@ describe('fetchUpstream', () => {
 })
 
 describe('utils/upstream.getUpstreamBase', () => {
-  it('forces https protocol when http provided', () => {
+  it('httpが指定された場合、httpsプロトコルを強制する', () => {
     const url = getUpstreamBase('warn', 'text')
     expect(url.startsWith('https://')).toBe(true)
   })
-  it('throws for invalid URL', () => {
+  it('無効なURLの場合、エラーを投げる', () => {
     const original = process.env.UPSTREAM
     process.env.UPSTREAM = 'not-a-url'
     expect(() => getUpstreamBase('warn', 'text')).toThrow()

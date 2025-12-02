@@ -17,7 +17,7 @@ export interface AppConfig {
 }
 
 export function createApp(config: AppConfig) {
-  // 下限バリデーション（負値や NaN を 0 に補正）
+  // quarantineMinutesの下限バリデーション（負値やNaNを0に補正）
   const safeMinutes = (Number.isFinite(config.quarantineMinutes) && config.quarantineMinutes >= 0)
     ? Math.floor(config.quarantineMinutes)
     : 0
@@ -33,7 +33,7 @@ export function createApp(config: AppConfig) {
     const data = await res.json()
     if (isNpmPackageMeta(data) && config.quarantineEnabled) {
       const beforeLatest = data['dist-tags']?.['latest']
-      // 時刻基準: 現在時刻を基準にする
+      // ポリシー適用の時刻基準: 現在時刻
       const refNow = new Date()
       const result = applyPolicy(
         data,

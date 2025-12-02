@@ -12,7 +12,7 @@ export function applyQuarantine(
   const currentLatestVer: string | undefined = distTags?.latest
   if (!distTags || !timeData || currentLatestVer === undefined) return
 
-  // 日付の妥当性検証（ISO文字列が不正なものを除外）
+  // 日付文字列の妥当性を検証 (不正なISO文字列を除外)
   const isValidDate = (s: string | undefined): boolean => {
     if (!s) return false
     const n = Date.parse(s)
@@ -24,7 +24,7 @@ export function applyQuarantine(
   const diffMinutes = (now.getTime() - publishDate.getTime()) / (1000 * 60)
 
   if (diffMinutes < minutesThreshold) {
-    // ポリシーにより latest を剥奪。元の最新を 'quarantine-latest' に退避
+    // ポリシーにより 'latest' を剥奪し、'quarantine-latest' に退避
     distTags['quarantine-latest'] = currentLatestVer
 
     const safeVersions = Object.keys(timeData).filter((v) => {
@@ -45,8 +45,8 @@ export function applyQuarantine(
       if (policyOnNoSafe === 'fail') {
         throw new Error('No safe versions available within quarantine policy')
       }
-      // 'set-safe' の場合でも安全版がないため、latest を設定できない。
-      // 意図しないインストールを避けるため latest を削除する。
+      // 'set-safe' ポリシーでも安全なバージョンがない場合、
+      // 意図しないインストールを防ぐために 'latest' を削除
       delete distTags.latest
     }
   }

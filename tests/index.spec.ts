@@ -1,14 +1,15 @@
 import { describe, it, expect, vi } from 'vitest'
 
-// This test runs index in a child process-like manner by mocking process args/env.
-// We only assert that invalid policy triggers exit(1).
+// このテストは、プロセスの引数や環境変数をモックすることで、
+// 子プロセスのようにindexを実行します。
+// 無効なポリシーがexit(1)をトリガーすることのみを表明します。
 
-describe('index config validation', () => {
-  it('exits with code 1 on invalid QUARANTINE_POLICY_ON_NO_SAFE', async () => {
+describe('index の設定値バリデーション', () => {
+  it('無効な QUARANTINE_POLICY_ON_NO_SAFE の場合、終了コード1でプロセスが終了する', async () => {
     const mockExit = vi
       .spyOn(process, 'exit')
       .mockImplementation(((code?: number) => { throw new Error(String(code)) }) as any)
-    // simulate invalid policy before module import
+    // モジュールインポート前に無効なポリシーをシミュレート
     process.env.QUARANTINE_POLICY_ON_NO_SAFE = 'invalid-policy'
     try {
       await import('../src/index')

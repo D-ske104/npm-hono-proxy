@@ -4,10 +4,10 @@ import { pathToFileURL } from 'node:url'
 import { fileURLToPath } from 'node:url'
 import { dirname, resolve } from 'node:path'
 
-// Resolve dist output relative to this CLI file location
+// distの出力をこのCLIファイルの場所を基準に解決
 const thisDir = dirname(fileURLToPath(import.meta.url))
 const entry = resolve(thisDir, '..', 'dist', 'index.js')
 const entryUrl = pathToFileURL(entry).href
 
-// Dynamically import the built ESM entry
+// ビルドされたESMエントリを動的にインポート
 import(entryUrl)

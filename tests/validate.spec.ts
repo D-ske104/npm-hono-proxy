@@ -2,21 +2,21 @@ import { describe, it, expect } from 'vitest'
 import { isNpmPackageMeta } from '../src/validate'
 
 describe('isNpmPackageMeta', () => {
-  it('accepts object with dist-tags and time maps', () => {
+  it('dist-tagsとtimeマップを持つオブジェクトを受け入れる', () => {
     const obj = { 'dist-tags': { latest: '1.0.0' }, time: { '1.0.0': new Date().toISOString() } }
     expect(isNpmPackageMeta(obj)).toBe(true)
   })
 
-  it('accepts object with missing optional fields', () => {
+  it('オプショナルなフィールドが欠けているオブジェクトを受け入れる', () => {
     expect(isNpmPackageMeta({})).toBe(true)
   })
 
-  it('rejects non-object', () => {
+  it('オブジェクトでないものを拒否する', () => {
     expect(isNpmPackageMeta(null)).toBe(false)
     expect(isNpmPackageMeta('string')).toBe(false)
   })
 
-  it('rejects if dist-tags is not object', () => {
+  it('dist-tagsがオブジェクトでない場合、拒否する', () => {
     expect(isNpmPackageMeta({ 'dist-tags': 123 })).toBe(false)
   })
 })
