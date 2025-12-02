@@ -7,9 +7,11 @@ import { getUpstreamBase } from '../utils/upstream'
 import type { AppConfig } from '../config'
 
 export async function handlePackageVersion(c: Context, config: AppConfig, safeMinutes: number) {
-  const { pkg, version } = c.req.param()
+  const { pkg, version, scope } = c.req.param()
+  // scoped パッケージ対応: /@:scope/:pkg/:version ルートから呼ばれる場合は結合
+  const fullName = scope ? `@${scope}/${pkg}` : pkg
   const upstreamBase = getUpstreamBase(config.logLevel, config.logFormat)
-  const { res } = await fetchUpstream(`/${pkg}`, upstreamBase)
+  const { res } = await fetchUpstream(`/${fullName}`, upstreamBase)
   if (!res.ok) return c.newResponse(res.body, res)
 
   const data = await res.json()
@@ -24,13 +26,14 @@ export async function handlePackageVersion(c: Context, config: AppConfig, safeMi
     if (quarantined) {
       emitLog(config.logLevel, config.logFormat, 'warn', 'quarantine-hit', {
         path: c.req.path,
+        package: fullName,
         version,
         latestSafe: latestSafeVersion ?? 'n/a',
       })
       return c.json(
         {
           error: 'Version Not Found due to Quarantine Policy',
-          message: `Version '${pkg}@${version}' is currently under quarantine.`,
+          message: `Version '${fullName}@${version}' is currently under quarantine.`,
           policy: {
             thresholdMinutes: safeMinutes,
           },
