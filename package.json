@@ -1,5 +1,5 @@
 {
-  "version": "0.1.1",
+  "version": "0.2.0",
   "name": "npm-hono-proxy",
   "type": "module",
   "scripts": {
@@ -38,8 +38,8 @@
     "vitest": "^4.0.14"
   },
   "dependencies": {
-     "@hono/node-server": "^1.19.6",
-     "hono": "^4.10.7",
-     "semver": "^7.6.3"
+    "@hono/node-server": "^1.19.6",
+    "hono": "^4.10.7",
+    "semver": "^7.6.3"
   }
 }
