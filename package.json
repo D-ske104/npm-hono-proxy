@@ -6,7 +6,12 @@
     "build": "tsdown",
     "watch": "tsdown -w",
     "dev": "tsx ./src/index.ts",
-    "test": "vitest"
+    "test": "vitest",
+    "play:dev": "npm run dev",
+    "play:bin": "npm run build && node bin/cli.js",
+    "play:npx": "npm run build && npx .",
+    "play:reset": "node playground/scripts/reset.js",
+    "play:verify": "node playground/scripts/verify.js"
   },
   "bin": {
     "npm-hono-proxy": "bin/cli.js"
