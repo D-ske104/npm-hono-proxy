@@ -102,6 +102,77 @@ npm-hono-proxy \
 - `.tgz` 等の非 JSON リクエストは 302 で本家（`https://registry.npmjs.org`）へリダイレクトします。
 - 安全版が存在しない場合の挙動はポリシーで制御できます（`set-safe`: 安全版がなければ latest を削除、`fail`: 409 で失敗）。
 
+## 監査コマンド (audit)
+
+依存関係を事前に確認し、隔離対象（公開後隔離期間内のバージョン）が原因で `npm install` 時に `ETARGET` になる可能性を示します。
+
+### 使い方
+
+監査のみ（変更なし）:
+
+```zsh
+npx npm-hono-proxy audit
+```
+
+またはビルド済み直接:
+
+```zsh
+node dist/audit.mjs
+```
+
+修正付き監査（`package.json` を自動書き換え）:
+
+```zsh
+NPM_HONO_PROXY_AUDIT_FIX=true npx npm-hono-proxy audit
+```
+
+### 自動修正ポリシー
+
+| ケース | デフォルト挙動 | 例 | 備考 |
+|--------|----------------|----|------|
+| 範囲指定で解決される最新版が検疫対象 | 最新“安全版”へ厳密固定（prefix除去） | `^4.10.0` → `4.10.4` | lockfile/node_modules に安全版が固定済みなら変更せず維持 |
+| 厳密指定が検疫対象 | 最新安全版へ置換 | `4.10.7` → `4.10.4` | 安全版がなければ変更なし |
+| 厳密指定が安全 | 変更なし | `4.10.4` | そのまま |
+| 範囲指定が安全版を解決 | 変更なし | `^4.10.0` (安全版 4.10.4) | そのまま |
+| 安全版なし | 変更なし＋警告 | - | `latestSafeVersion` が求まらない |
+
+### prefix モード
+
+環境変数 `NPM_HONO_PROXY_AUDIT_USE_PREFIX=true` を指定すると、
+
+- 範囲指定を安全版へ縮める際に元の接頭辞（`^` / `~`）を保持、厳密指定化せず `^x.y.z` 形式へ変更。
+- 厳密指定検疫 → 安全版へ更新する際に `^` を付与（元が `~` の場合は `~`）。
+
+例:
+
+```zsh
+NPM_HONO_PROXY_AUDIT_FIX=true \
+NPM_HONO_PROXY_AUDIT_USE_PREFIX=true \
+node dist/audit.mjs
+```
+
+### 注意点
+
+- `audit fix` は整形を壊さないようにバージョン文字列部分だけ置き換えます。
+- lockfile と node_modules に既に安全版が存在する場合は範囲指定を保持し、将来の再インストールでも安全版が確定する前提とします。
+- 厳密指定が検疫対象かつ安全版が存在しない場合は手動対応が必要です（警告のみ）。
+
+### CI への組み込み例
+
+```zsh
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "Running quarantine audit"
+NPM_HONO_PROXY_AUDIT_FIX=true node dist/audit.mjs
+
+git diff --quiet || {
+  echo "package.json updated by audit fix; committing"
+  git add package.json
+  git commit -m "chore: apply audit fix"
+}
+```
+
 ## 開発メモ
 
 - ビルドは tsdown を使用し、出力は ESM（`dist/index.js`）。

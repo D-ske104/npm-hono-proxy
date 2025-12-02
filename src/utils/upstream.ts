@@ -1,4 +1,4 @@
-import { getArg } from './args'
+import { getArg } from '../config'
 import { emitLog } from './log'
 import type { LogLevel, LogFormat } from './log'
 
