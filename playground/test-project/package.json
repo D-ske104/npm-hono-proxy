@@ -1,0 +1,8 @@
+{
+  "name": "test-project",
+  "version": "1.0.0",
+  "description": "Test project for npm-hono-proxy",
+  "dependencies": {
+    "hono": "latest"
+  }
+}

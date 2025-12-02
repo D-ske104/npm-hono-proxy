@@ -6,7 +6,12 @@
     "build": "tsdown",
     "watch": "tsdown -w",
     "dev": "tsx ./src/index.ts",
-    "test": "vitest"
+    "test": "vitest",
+    "play:dev": "npm run dev",
+    "play:bin": "npm run build && node bin/cli.js",
+    "play:npx": "npm run build && npx .",
+    "play:reset": "node playground/scripts/reset.js",
+    "play:verify": "node playground/scripts/verify.js"
   },
   "bin": {
     "npm-hono-proxy": "bin/cli.js"
@@ -27,6 +32,8 @@
   "devDependencies": {
     "@types/node": "^22.19.1",
     "tsdown": "^0.16.8",
+    "@types/semver": "^7.7.1",
+    "semver": "^7.7.3",
     "tsx": "^4.20.6",
     "typescript": "~5.9.3",
     "vitest": "^4.0.14"

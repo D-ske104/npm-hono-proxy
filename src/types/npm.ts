@@ -3,5 +3,6 @@ export type DistTags = Record<string, string>
 export interface NpmPackageMeta {
   'dist-tags'?: DistTags
   time?: NpmTimeMap
+  versions?: Record<string, unknown>
   [k: string]: unknown
 }

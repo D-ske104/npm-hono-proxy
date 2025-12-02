@@ -1,0 +1,37 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "type": "npm",
+      "script": "build",
+      "group": "build",
+      "problemMatcher": [],
+      "label": "npm: build",
+      "detail": "tsdown"
+    },
+    {
+      "type": "npm",
+      "script": "play:dev",
+      "label": "Playground: Dev Server",
+      "detail": "Run the proxy server in development mode",
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "type": "npm",
+      "script": "play:bin",
+      "label": "Playground: Bin (Build & Run)",
+      "detail": "Build and run the proxy server using bin/cli.js",
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "type": "npm",
+      "script": "play:npx",
+      "label": "Playground: NPX (Build & Run)",
+      "detail": "Build and run the proxy server simulating npx installation",
+      "isBackground": true,
+      "problemMatcher": []
+    }
+  ]
+}
