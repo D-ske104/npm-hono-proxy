@@ -2,6 +2,7 @@
 dist/
 lambda.zip
 *.js
+!bin/cli.js
 !jest.config.js
 *.d.ts
 
@@ -33,7 +34,3 @@ lerna-debug.log*
 
 # misc
 .DS_Store
-
-# CDK asset staging directory
-.cdk.staging
-cdk.out

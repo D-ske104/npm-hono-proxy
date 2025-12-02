@@ -26,9 +26,9 @@
     ],
     "jsx": "react-jsx",
     "jsxImportSource": "hono/jsx",
+    "forceConsistentCasingInFileNames": true
   },
   "exclude": [
-    "node_modules",
-    "cdk.out"
+    "node_modules"
   ]
 }

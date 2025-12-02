@@ -2,27 +2,36 @@
   "name": "npm-hono-proxy",
   "type": "module",
   "scripts": {
-    "build": "esbuild --bundle --outfile=./dist/index.js --platform=node --target=node22 ./src/index.ts",
-    "zip": "zip -j lambda.zip dist/index.js",
-    "update": "aws lambda update-function-code --zip-file fileb://lambda.zip --function-name hello",
-    "deploy": "run-s build zip update",
-    "watch": "tsc -w",
-    "test": "vitest",
-    "cdk": "cdk"
+    "build": "tsdown",
+    "watch": "tsdown -w",
+    "dev": "tsx ./src/index.ts",
+    "test": "vitest"
   },
+  "bin": {
+    "npm-hono-proxy": "./bin/cli.js"
+  },
+  "main": "dist/index.js",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "bin",
+    "README.md",
+    "LICENSE"
+  ],
   "devDependencies": {
-    "@types/aws-lambda": "^8.10.159",
     "@types/node": "^22.19.1",
-    "aws-cdk": "2.1033.0",
-    "esbuild": "^0.27.0",
-    "npm-run-all2": "^8.0.4",
+    "tsdown": "^0.16.8",
     "tsx": "^4.20.6",
     "typescript": "~5.9.3",
     "vitest": "^4.0.14"
   },
   "dependencies": {
-    "aws-cdk-lib": "2.230.0",
-    "constructs": "^10.4.3",
+    "@hono/node-server": "^1.19.6",
     "hono": "^4.10.7"
   }
 }
