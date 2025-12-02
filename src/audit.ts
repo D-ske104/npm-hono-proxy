@@ -92,87 +92,117 @@ export async function runAudit() {
   let quarantinedCount = 0
   const updatesToApply = new Map<string, { newSpec: string; type: 'dependencies' | 'devDependencies' }>()
 
-  for (const [name, versionRange] of Object.entries(dependencies)) {
-    const { res } = await fetchUpstream(`/${name}`, upstreamBase)
-    if (!res.ok) {
-      console.warn(`  ⚠️ Could not fetch metadata for ${name}. Skipping.`)
-      continue
-    }
-    const meta = await res.json()
-    if (!isNpmPackageMeta(meta)) {
-      console.warn(`  ⚠️ Invalid metadata for ${name}. Skipping.`)
-      continue
-    }
+  // ---- 並列取得 & 評価 --------------------------------------------------
+  const entries = Object.entries(dependencies)
+  const concurrency = Number(process.env.NPM_HONO_PROXY_AUDIT_CONCURRENCY || '8') || 8
 
-    const availableVersions = Object.keys(meta.versions ?? {})
-    const targetVersion = semver.maxSatisfying(availableVersions, versionRange as string)
+  type EvalResult = {
+    name: string
+    versionRange: string
+    targetVersion?: string
+    quarantined?: boolean
+    latestSafeVersion?: string
+    logLines: string[]
+  }
 
-    if (!targetVersion) {
-      console.log(`  - ${name}: No version satisfies "${versionRange}". Skipping.`)
-      continue
-    }
-
-    const { quarantined, latestSafeVersion } = findQuarantinedVersion(
-      targetVersion,
-      meta.time,
-      refNow,
-      safeMinutes
-    )
-
-    if (quarantined) {
-      quarantinedCount++
-      console.log(`  🚨 ${name}@${targetVersion} (satisfies "${versionRange}") is QUARANTINED.`)
-      if (latestSafeVersion) {
-        console.log(`     -> Latest safe version is ${latestSafeVersion}.`)
-        if (isFixMode) {
-          const type = manifest.dependencies?.[name] ? 'dependencies' : 'devDependencies'
-          const currentSpec = (manifest.dependencies?.[name] || manifest.devDependencies?.[name]) as string
-          const isExact = !!semver.valid(currentSpec)
-          if (isExact) {
-            // 正確指定が検疫対象 -> 安全版へ書き換え (最新安全版がある場合)
-            if (latestSafeVersion) {
-              const newSpec = latestSafeVersion
-              if (newSpec !== currentSpec) {
-                updatesToApply.set(name, { newSpec, type })
-                console.log(`     -> 正確指定を安全版 ${newSpec} に自動修正します。`)
-              }
-            } else {
-              console.log('     -> 安全な代替バージョンが存在しないため自動修正できません。')
-            }
-          } else {
-            // 既存の node_modules / lockfile 状況を確認して spec を保持できるか判定
-            let installedVersion: string | undefined
-            // 修正モードでも何も修正がない場合はメッセージを出す
-            const installedPkgPath = path.join(process.cwd(), 'node_modules', name, 'package.json')
-            if (fsSync.existsSync(installedPkgPath)) {
-              const installedPkg = JSON.parse(fsSync.readFileSync(installedPkgPath, 'utf-8'))
-              installedVersion = installedPkg.version
-            }
-            const lockFileExists = fsSync.existsSync(path.join(process.cwd(), 'package-lock.json'))
-
-            const canKeepSpec = Boolean(
-              installedVersion && installedVersion === latestSafeVersion && lockFileExists
-            )
-
-            if (canKeepSpec) {
-              console.log(
-                `     -> Keeping spec "${currentSpec}" (locked safe ${installedVersion}).`
-              )
-            } else {
-              // caret / tilde / range の場合は安全版へ厳密ピン留め
-              const newSpec = latestSafeVersion
-              if (newSpec !== currentSpec) {
-                updatesToApply.set(name, { newSpec, type })
-                console.log('     -> Will pin to safe version to avoid future ETARGET.')
-              }
-            }
-          }
-        }
-      } else {
-        console.log('     -> No safe versions available.')
+  async function processEntry(name: string, versionRange: string): Promise<EvalResult> {
+    const log: string[] = []
+    try {
+      const { res } = await fetchUpstream(`/${name}`, upstreamBase)
+      if (!res.ok) {
+        log.push(`  ⚠️ Could not fetch metadata for ${name}. Skipping.`)
+        return { name, versionRange, logLines: log }
       }
-    } else {
+      const meta = await res.json()
+      if (!isNpmPackageMeta(meta)) {
+        log.push(`  ⚠️ Invalid metadata for ${name}. Skipping.`)
+        return { name, versionRange, logLines: log }
+      }
+      const availableVersions = Object.keys(meta.versions ?? {})
+      const targetVersion = semver.maxSatisfying(availableVersions, versionRange as string)
+      if (!targetVersion) {
+        log.push(`  - ${name}: No version satisfies "${versionRange}". Skipping.`)
+        return { name, versionRange, logLines: log }
+      }
+      const { quarantined, latestSafeVersion } = findQuarantinedVersion(
+        targetVersion,
+        meta.time,
+        refNow,
+        safeMinutes
+      )
+      return { name, versionRange, targetVersion, quarantined, latestSafeVersion, logLines: log }
+    } catch (e: any) {
+      log.push(`  ⚠️ Error processing ${name}: ${e?.message || e}`)
+      return { name, versionRange, logLines: log }
+    }
+  }
+
+  async function asyncPool<T, R>(limit: number, arr: T[], fn: (item: T) => Promise<R>): Promise<R[]> {
+    const ret: R[] = []
+    const executing: Promise<void>[] = []
+    for (const item of arr) {
+      const p = (async () => {
+        ret.push(await fn(item))
+      })()
+      executing.push(p)
+      if (executing.length >= limit) {
+        await Promise.race(executing)
+        // remove settled promises
+        for (let i = executing.length - 1; i >= 0; i--) {
+          if ((executing[i] as any).settled) executing.splice(i, 1)
+        }
+      }
+      ;(p as any).finally(() => ((p as any).settled = true))
+    }
+    await Promise.all(executing)
+    return ret
+  }
+
+  const results = await asyncPool(concurrency, entries, ([n, r]) => processEntry(n, r as string))
+
+  // ---- 評価結果の処理（順序維持でログ出力 & 修正計画生成） --------------
+  for (const r of results) {
+    for (const l of r.logLines) console.log(l)
+    if (!r.targetVersion) continue
+    const { name, versionRange, targetVersion, quarantined, latestSafeVersion } = r
+    if (!quarantined) {
       console.log(`  ✅ ${name}@${targetVersion} (satisfies "${versionRange}") is safe.`)
+      continue
+    }
+    quarantinedCount++
+    console.log(`  🚨 ${name}@${targetVersion} (satisfies "${versionRange}") is QUARANTINED.`)
+    if (!latestSafeVersion) {
+      console.log('     -> No safe versions available.')
+      continue
+    }
+    console.log(`     -> Latest safe version is ${latestSafeVersion}.`)
+    if (!isFixMode) continue
+    const type = manifest.dependencies?.[name] ? 'dependencies' : 'devDependencies'
+    const currentSpec = (manifest.dependencies?.[name] || manifest.devDependencies?.[name]) as string
+    const isExact = !!semver.valid(currentSpec)
+    if (isExact) {
+      if (latestSafeVersion !== currentSpec) {
+        updatesToApply.set(name, { newSpec: latestSafeVersion, type })
+        console.log(`     -> 正確指定を安全版 ${latestSafeVersion} に自動修正します。`)
+      }
+      continue
+    }
+    // 範囲指定の場合: 既存インストール + lock が安全版なら保持、そうでなければピン止め
+    let installedVersion: string | undefined
+    const installedPkgPath = path.join(process.cwd(), 'node_modules', name, 'package.json')
+    if (fsSync.existsSync(installedPkgPath)) {
+      try {
+        const installedPkg = JSON.parse(fsSync.readFileSync(installedPkgPath, 'utf-8'))
+        installedVersion = installedPkg.version
+      } catch {}
+    }
+    const lockFileExists = fsSync.existsSync(path.join(process.cwd(), 'package-lock.json'))
+    const canKeepSpec = Boolean(installedVersion && installedVersion === latestSafeVersion && lockFileExists)
+    if (canKeepSpec) {
+      console.log(`     -> Keeping spec "${currentSpec}" (locked safe ${installedVersion}).`)
+    } else if (latestSafeVersion !== currentSpec) {
+      updatesToApply.set(name, { newSpec: latestSafeVersion, type })
+      console.log('     -> Pinning to safe version to avoid future ETARGET.')
     }
   }
 
