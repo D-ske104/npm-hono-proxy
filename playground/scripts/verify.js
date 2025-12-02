@@ -13,10 +13,10 @@ if (!fs.existsSync(nodeModulesDir)) {
   process.exit(1);
 }
 
-// Check for the specific dependency we expect (is-odd)
-const targetPkg = path.join(nodeModulesDir, 'is-odd', 'package.json');
+// Check for the specific dependency we expect (hono)
+const targetPkg = path.join(nodeModulesDir, 'hono', 'package.json');
 if (!fs.existsSync(targetPkg)) {
-  console.error('❌ is-odd package not found in node_modules.');
+  console.error('❌ hono package not found in node_modules.');
   process.exit(1);
 }
 

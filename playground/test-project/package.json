@@ -3,6 +3,6 @@
   "version": "1.0.0",
   "description": "Test project for npm-hono-proxy",
   "dependencies": {
-    "is-odd": "^3.0.1"
+    "hono": "4.x"
   }
 }

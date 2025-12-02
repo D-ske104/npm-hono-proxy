@@ -11,7 +11,7 @@ export function applyPolicy(
   policy: QuarantineNoSafePolicy,
 ): PolicyResult {
   try {
-    applyQuarantine(data['dist-tags'], data.time, now, minutes, policy)
+    applyQuarantine(data['dist-tags'], data.time, data.versions, now, minutes, policy)
     return { blocked: false }
   } catch (e) {
     return { blocked: true, reason: e instanceof Error ? e.message : 'policy-error' }

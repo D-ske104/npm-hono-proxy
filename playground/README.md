@@ -1,32 +1,32 @@
 # Playground
 
-This directory is for debugging `npm-hono-proxy`.
+このディレクトリは `npm-hono-proxy` のデバッグ用です。
 
-## How to use
+## 使い方
 
-1. Start the proxy server using one of the **VS Code Tasks** or **npm scripts** below.
-2. Open another terminal in `playground/test-project`.
-3. Run `npm install`.
+1. 下記の **VS Code タスク** または **npm scripts** を使ってプロキシサーバーを起動します。
+2. 別のターミナルを開き、`playground/test-project` ディレクトリに移動します。
+3. `npm install` を実行して挙動を確認します。
 
-## Running the Server
+## サーバーの起動
 
-You can run these tasks via VS Code's "Run Task" command or directly via npm in the project root.
+VS Code の「タスクの実行 (Run Task)」コマンド、またはプロジェクトルートで npm コマンドを直接実行して起動できます。
 
-| VS Code Task | npm Script | Description |
+| VS Code タスク | npm スクリプト | 説明 |
 | :--- | :--- | :--- |
-| **Playground: Dev Server** | `npm run play:dev` | Runs the server in development mode (`npm run dev`). |
-| **Playground: Bin (Build & Run)** | `npm run play:bin` | Builds and runs the server using the CLI script (`node bin/cli.js`). |
-| **Playground: NPX (Build & Run)** | `npm run play:npx` | Builds and runs the server using `npx .` (simulating installed package). |
+| **Playground: Dev Server** | `npm run play:dev` | 開発モードでサーバーを起動します (`npm run dev`)。 |
+| **Playground: Bin (Build & Run)** | `npm run play:bin` | ビルドを行い、CLIスクリプト経由でサーバーを起動します (`node bin/cli.js`)。 |
+| **Playground: NPX (Build & Run)** | `npm run play:npx` | ビルドを行い、`npx .` を使用してインストール済みパッケージとしての挙動をシミュレートして起動します。 |
 
-## Helper Scripts
+## ヘルパースクリプト
 
-These scripts help you verify the proxy behavior.
+プロキシの挙動検証を支援するスクリプトです。
 
-| npm Script | Description |
+| npm スクリプト | 説明 |
 | :--- | :--- |
-| `npm run play:reset` | Deletes `node_modules` and `package-lock.json` in `test-project`. |
-| `npm run play:verify` | Checks if `is-odd` was successfully installed in `test-project`. |
+| `npm run play:reset` | `test-project` 内の `node_modules` と `package-lock.json` を削除してリセットします。 |
+| `npm run play:verify` | `test-project` に `hono` が正常にインストールされたかを確認します。（チェック対象は `playground/scripts/verify.js` で変更可能） |
 
-## Test Project
+## テストプロジェクト
 
-The `test-project` directory contains a `package.json` and an `.npmrc` configured to use the local proxy (`http://localhost:4873`).
+`test-project` ディレクトリには、ローカルプロキシ (`http://localhost:4873`) を使用するように設定された `.npmrc` と `package.json` が含まれています。
