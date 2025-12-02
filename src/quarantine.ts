@@ -25,28 +25,37 @@ export function applyQuarantine(
 
   for (const v of allVersions) {
     if (!isValidDate(timeData[v])) continue
-
     const pDate = new Date(timeData[v])
     const diffMinutes = (now.getTime() - pDate.getTime()) / (1000 * 60)
-
     if (diffMinutes >= minutesThreshold) {
       safeVersions.add(v)
-    } else {
-      // Quarantine対象: バージョン一覧から削除
-      if (versions && versions[v]) {
+    }
+  }
+
+  // 2. versions と dist-tags から安全でないものを削除
+  // versionsから安全でないものを削除
+  if (versions) {
+    for (const v of Object.keys(versions)) {
+      if (!safeVersions.has(v)) {
         delete versions[v]
       }
     }
   }
 
-  // 2. dist-tags の整合性を取る
-  // latest が安全でない場合、安全なバージョンの中で最新のものに向ける
-  const currentLatest = distTags.latest
-  if (currentLatest && !safeVersions.has(currentLatest)) {
-    // 元のlatestを退避
-    distTags['quarantine-latest'] = currentLatest
+  // dist-tagsから安全でないものを削除
+  let latestWasRemoved = false
+  for (const [tag, ver] of Object.entries(distTags)) {
+    if (!safeVersions.has(ver)) {
+      if (tag === 'latest') {
+        latestWasRemoved = true
+        distTags['quarantine-latest'] = ver
+      }
+      delete distTags[tag]
+    }
+  }
 
-    // 安全なバージョンの中で一番新しいものを探す
+  // 3. latest タグを再設定
+  if (latestWasRemoved) {
     const sortedSafe = Array.from(safeVersions).sort((a, b) => {
       return new Date(timeData[b]).getTime() - new Date(timeData[a]).getTime()
     })
@@ -54,19 +63,10 @@ export function applyQuarantine(
     if (sortedSafe.length > 0) {
       distTags.latest = sortedSafe[0]
     } else {
-      // 安全なバージョンが一つもない場合
       if (policyOnNoSafe === 'fail') {
         throw new Error('No safe versions available within quarantine policy')
       }
-      delete distTags.latest
-    }
-  }
-
-  // その他のタグも、削除されたバージョンを指していたら削除する
-  for (const [tag, ver] of Object.entries(distTags)) {
-    if (tag === 'latest' || tag === 'quarantine-latest') continue
-    if (!safeVersions.has(ver)) {
-      delete distTags[tag]
+      // 'latest' は既に削除されているため、'set-safe' ポリシーでは何もしない
     }
   }
 }

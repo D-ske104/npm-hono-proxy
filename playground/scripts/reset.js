@@ -20,7 +20,7 @@ targets.forEach(target => {
       fs.rmSync(target, { recursive: true, force: true });
       console.log(`   Deleted: ${path.relative(projectDir, target)}`);
     } catch (e) {
-      console.error(`   Failed to delete ${target}:`, e.message);
+      console.error(`   Failed to delete ${path.relative(projectDir, target)}:`, e.message);
     }
   }
 });

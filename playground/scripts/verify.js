@@ -13,10 +13,11 @@ if (!fs.existsSync(nodeModulesDir)) {
   process.exit(1);
 }
 
-// Check for the specific dependency we expect (hono)
-const targetPkg = path.join(nodeModulesDir, 'hono', 'package.json');
+// Check for the specific dependency we expect
+const targetPackage = process.argv[2] || 'hono';
+const targetPkg = path.join(nodeModulesDir, targetPackage, 'package.json');
 if (!fs.existsSync(targetPkg)) {
-  console.error('❌ hono package not found in node_modules.');
+  console.error(`❌ ${targetPackage} package not found in node_modules.`);
   process.exit(1);
 }
 
