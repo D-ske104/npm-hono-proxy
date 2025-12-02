@@ -12,7 +12,7 @@ npx npm-hono-proxy
 
 ```zsh
 npm install
-npm run build    # tsdown で ESM を dist に出力（dist/index.mjs）
+npm run build    # tsdown で ESM を dist に出力（dist/index.js）
 ```
 
 開発起動（ホットなしのシンプル起動）:
@@ -24,7 +24,7 @@ npm run dev      # tsx で直接 src/index.ts を起動
 ビルド成果物で起動:
 
 ```zsh
-node dist/index.mjs
+node dist/index.js
 ```
 
 ## 隔離ポリシーの設定
@@ -45,7 +45,7 @@ node dist/index.mjs
 例（CLI 引数）:
 
 ```zsh
-node dist/index.mjs \
+node dist/index.js \
   --port=5000 \
   --quarantine-enabled=true \
   --quarantine-minutes=20160 \
@@ -62,7 +62,7 @@ node dist/index.mjs \
 
 ```zsh
 PORT=5000 QUARANTINE_ENABLED=false QUARANTINE_MINUTES=43200 QUARANTINE_POLICY_ON_NO_SAFE=set-safe \
-  VERBOSE=true LOG_LEVEL=info LOG_FORMAT=text UPSTREAM=https://registry.npmjs.org node dist/index.mjs
+  VERBOSE=true LOG_LEVEL=info LOG_FORMAT=text UPSTREAM=https://registry.npmjs.org node dist/index.js
 ```
 
 例（npx 起動）:
@@ -104,7 +104,7 @@ npm-hono-proxy \
 
 ## 開発メモ
 
-- ビルドは tsdown を使用し、出力は ESM（`dist/index.mjs`）。
+- ビルドは tsdown を使用し、出力は ESM（`dist/index.js`）。
 
 ## 利用側の設定例（npm クライアント）
 

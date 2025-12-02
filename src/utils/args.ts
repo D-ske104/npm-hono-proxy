@@ -9,13 +9,13 @@ export function getArg(name: string): string | undefined {
 export function parseBool(v: string | undefined, fallback: boolean): boolean {
   if (v === undefined) return fallback
   const t = v.toLowerCase()
-  if (["1", "true", "yes", "on"].includes(t)) return true
-  if (["0", "false", "no", "off"].includes(t)) return false
+  if (["true", "yes", "on"].includes(t)) return true
+  if (["false", "no", "off"].includes(t)) return false
   return fallback
 }
 
 export function ensureNonNegativeInt(v: number): number {
-  if (!Number.isFinite(v) || Number.isNaN(v)) return 0
+  if (!Number.isFinite(v)) return 0
   if (v < 0) return 0
   return Math.floor(v)
 }

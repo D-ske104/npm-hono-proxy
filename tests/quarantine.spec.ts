@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { applyQuarantine, QuarantineNoSafePolicy } from '../src/quarantine'
+import { applyQuarantine } from '../src/quarantine'
 import type { DistTags, NpmTimeMap } from '../src/types/npm'
 
 function buildTimeMap(base: Date, offsetsMinutes: Record<string, number>): NpmTimeMap {
@@ -63,5 +63,56 @@ describe('applyQuarantine (minutes threshold)', () => {
     const distTags: DistTags = { latest: '1.0.0' }
     applyQuarantine(distTags, undefined, now, 60, 'set-safe')
     expect(distTags.latest).toBe('1.0.0')
+  })
+
+  it('time に不正 ISO 文字列が混在しても不正は除外して判定', () => {
+    const now = new Date('2025-12-01T12:00:00Z')
+    const distTags: DistTags = { latest: '2.0.0' }
+    const time: NpmTimeMap = {
+      '1.0.0': new Date(now.getTime() - 5000 * 60 * 1000).toISOString(),
+      '2.0.0': 'invalid-iso',
+    }
+    // latest の日時が不正なので隔離はスキップ（何もしない）
+    applyQuarantine(distTags, time, now, 60, 'set-safe')
+    expect(distTags['quarantine-latest']).toBeUndefined()
+    expect(distTags.latest).toBe('2.0.0')
+  })
+
+  it('time の created/modified は候補から除外される', () => {
+    const now = new Date('2025-12-01T12:00:00Z')
+    const distTags: DistTags = { latest: '2.0.0' }
+    const time: NpmTimeMap = {
+      '1.0.0': new Date(now.getTime() - 5000 * 60 * 1000).toISOString(),
+      '2.0.0': new Date(now.getTime() - 30 * 60 * 1000).toISOString(),
+      created: new Date(now.getTime() - 6000 * 60 * 1000).toISOString(),
+      modified: new Date(now.getTime() - 100 * 60 * 1000).toISOString(),
+    }
+    applyQuarantine(distTags, time, now, 60, 'set-safe')
+    expect(distTags['quarantine-latest']).toBe('2.0.0')
+    expect(distTags.latest).toBe('1.0.0')
+  })
+
+  it('閾値ちょうどの版は安全（>= は安全）', () => {
+    const now = new Date('2025-12-01T12:00:00Z')
+    const distTags: DistTags = { latest: '1.0.0' }
+    const time = buildTimeMap(now, { '1.0.0': 60 })
+    applyQuarantine(distTags, time, now, 60, 'set-safe')
+    expect(distTags['quarantine-latest']).toBeUndefined()
+    expect(distTags.latest).toBe('1.0.0')
+  })
+
+  it('同一タイムスタンプが複数でも安全版選定は安定', () => {
+    const now = new Date('2025-12-01T12:00:00Z')
+    const distTags: DistTags = { latest: '3.0.0' }
+    const same = new Date(now.getTime() - 5000 * 60 * 1000).toISOString()
+    const time: NpmTimeMap = {
+      '1.0.0': same,
+      '2.0.0': same,
+      '3.0.0': new Date(now.getTime() - 30 * 60 * 1000).toISOString(),
+    }
+    applyQuarantine(distTags, time, now, 60, 'set-safe')
+    // 実装は降順ソートの先頭を選択（キー順には依存しない）。
+    expect(['1.0.0', '2.0.0']).toContain(distTags.latest!)
+    expect(distTags['quarantine-latest']).toBe('3.0.0')
   })
 })

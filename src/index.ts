@@ -6,7 +6,7 @@ import { createApp } from './app'
 
 const PORT = Number(getArg('port') ?? process.env.PORT ?? '4873')
 const QUARANTINE_ENABLED = parseBool(getArg('quarantine-enabled') ?? process.env.QUARANTINE_ENABLED, true)
-// 隔離期間を分単位で受け取り、内部では日数に換算して利用する
+// 隔離期間は分単位で受け取り、そのまま分として利用する
 const rawQuarantineMinutes = Number(
   getArg('quarantine-minutes') ??
     process.env.QUARANTINE_MINUTES ??
@@ -16,10 +16,15 @@ const rawQuarantineMinutes = Number(
 const QUARANTINE_MINUTES = ensureNonNegativeInt(rawQuarantineMinutes)
 if (QUARANTINE_MINUTES !== rawQuarantineMinutes) {
   console.warn(
-    `⚠️  QUARANTINE_MINUTES (${rawQuarantineMinutes}) が不正値のため 0 に補正されました (隔離無効扱い)`
+    `⚠️  QUARANTINE_MINUTES (${rawQuarantineMinutes}) が不正値のため ${QUARANTINE_MINUTES} に補正されました`
   )
 }
-const QUARANTINE_POLICY_ON_NO_SAFE = (getArg('quarantine-policy-on-no-safe') ?? process.env.QUARANTINE_POLICY_ON_NO_SAFE ?? 'set-safe') as QuarantineNoSafePolicy
+const QUARANTINE_POLICY_ON_NO_SAFE_RAW = (getArg('quarantine-policy-on-no-safe') ?? process.env.QUARANTINE_POLICY_ON_NO_SAFE ?? 'set-safe')
+if (QUARANTINE_POLICY_ON_NO_SAFE_RAW !== 'set-safe' && QUARANTINE_POLICY_ON_NO_SAFE_RAW !== 'fail') {
+  console.error(`Invalid QUARANTINE_POLICY_ON_NO_SAFE: ${QUARANTINE_POLICY_ON_NO_SAFE_RAW}. Allowed: set-safe|fail`)
+  process.exit(1)
+}
+const QUARANTINE_POLICY_ON_NO_SAFE = QUARANTINE_POLICY_ON_NO_SAFE_RAW as QuarantineNoSafePolicy
 const VERBOSE = parseBool(getArg('verbose') ?? process.env.VERBOSE, false)
 const LOG_LEVEL = (getArg('log-level') ?? process.env.LOG_LEVEL ?? (VERBOSE ? 'info' : 'warn')).toLowerCase() as LogLevel
 const LOG_FORMAT = (getArg('log-format') ?? process.env.LOG_FORMAT ?? 'text').toLowerCase() as LogFormat

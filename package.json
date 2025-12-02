@@ -10,10 +10,16 @@
   "bin": {
     "npm-hono-proxy": "./bin/cli.js"
   },
+  "main": "dist/index.js",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
   "files": [
     "dist",
     "bin",
-    "src",
     "README.md",
     "LICENSE"
   ],

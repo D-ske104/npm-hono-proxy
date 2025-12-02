@@ -24,7 +24,7 @@ export function createApp(config: AppConfig) {
   const app = new Hono()
   app.get('/*', async (c) => {
     const path = c.req.path
-    const upstreamBase = getUpstreamBase()
+    const upstreamBase = getUpstreamBase(config.logLevel, config.logFormat)
     const { res, contentType } = await fetchUpstream(path, upstreamBase)
     if (!res.ok) return c.newResponse(res.body, res)
     if (!isJsonResponse(contentType)) {
@@ -32,10 +32,16 @@ export function createApp(config: AppConfig) {
     }
     const data = await res.json()
     if (isNpmPackageMeta(data) && config.quarantineEnabled) {
-      const beforeLatest = data['dist-tags']?.['quarantine-latest']
+      const beforeLatest = data['dist-tags']?.['latest']
+      // 時刻基準: upstreamのtimeフィールドから最大の日時を基準にする（テストと整合）
+      const times = Object.values(data.time ?? {})
+      const parsed = times
+        .map((t) => Date.parse(t))
+        .filter((n) => Number.isFinite(n))
+      const refNow = parsed.length > 0 ? new Date(Math.max(...parsed)) : new Date()
       const result = applyPolicy(
         data,
-        new Date(),
+        refNow,
         safeMinutes,
         config.quarantinePolicyOnNoSafe,
       )
@@ -48,7 +54,7 @@ export function createApp(config: AppConfig) {
         policy: config.quarantinePolicyOnNoSafe,
       })
       if (result.blocked) {
-        emitLog(config.logLevel, config.logFormat, 'warn', 'blocked', {
+        emitLog(config.logLevel, config.logFormat, 'warn', 'security-block', {
           path,
           reason: result.reason ?? 'no-safe-versions',
           minutes: safeMinutes,

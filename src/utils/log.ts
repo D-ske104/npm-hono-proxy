@@ -3,7 +3,7 @@ export type LogFormat = 'text' | 'ndjson'
 
 export function shouldLog(currentLevel: LogLevel, threshold: LogLevel): boolean {
   const order: Record<LogLevel, number> = { info: 0, warn: 1, error: 2, silent: 99 }
-  return order[threshold] >= order[currentLevel] && currentLevel !== 'silent'
+  return order[currentLevel] >= order[threshold] && currentLevel !== 'silent'
 }
 
 export function emitLog(

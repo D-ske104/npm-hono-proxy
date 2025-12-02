@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { fetchUpstream } from '../src/upstream'
+import { getUpstreamBase } from '../src/utils/upstream'
 
 describe('fetchUpstream', () => {
   it('constructs URL with base and path', async () => {
@@ -12,5 +13,18 @@ describe('fetchUpstream', () => {
     expect(res).toBe(mockRes)
     expect(contentType).toContain('application/json')
     fetchSpy.mockRestore()
+  })
+})
+
+describe('utils/upstream.getUpstreamBase', () => {
+  it('forces https protocol when http provided', () => {
+    const url = getUpstreamBase('warn', 'text')
+    expect(url.startsWith('https://')).toBe(true)
+  })
+  it('throws for invalid URL', () => {
+    const original = process.env.UPSTREAM
+    process.env.UPSTREAM = 'not-a-url'
+    expect(() => getUpstreamBase('warn', 'text')).toThrow()
+    process.env.UPSTREAM = original
   })
 })

@@ -46,6 +46,8 @@ describe('integration: metadata quarantine flow', () => {
     const app = createApp({ ...baseConfig, quarantinePolicyOnNoSafe: 'fail' })
     const res = await app.request('/pkg')
     expect(res.status).toBe(409)
+    const text = await res.text()
+    expect(text).toContain('Quarantine policy blocked')
     spy.mockRestore()
   })
 

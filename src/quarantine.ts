@@ -10,7 +10,15 @@ export function applyQuarantine(
   policyOnNoSafe: QuarantineNoSafePolicy = 'set-safe'
 ): void {
   const currentLatestVer: string | undefined = distTags?.latest
-  if (!distTags || !timeData || !currentLatestVer || !timeData[currentLatestVer]) return
+  if (!distTags || !timeData || currentLatestVer === undefined) return
+
+  // 日付の妥当性検証（ISO文字列が不正なものを除外）
+  const isValidDate = (s: string | undefined): boolean => {
+    if (!s) return false
+    const n = Date.parse(s)
+    return Number.isFinite(n)
+  }
+  if (!isValidDate(timeData[currentLatestVer])) return
 
   const publishDate = new Date(timeData[currentLatestVer])
   const diffMinutes = (now.getTime() - publishDate.getTime()) / (1000 * 60)
@@ -21,6 +29,7 @@ export function applyQuarantine(
 
     const safeVersions = Object.keys(timeData).filter((v) => {
       if (v === 'created' || v === 'modified') return false
+      if (!isValidDate(timeData[v])) return false
       const pDate = new Date(timeData[v])
       const dMinutes = (now.getTime() - pDate.getTime()) / (1000 * 60)
       return dMinutes >= minutesThreshold
