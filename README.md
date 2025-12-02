@@ -123,7 +123,7 @@ node dist/audit.mjs
 修正付き監査（`package.json` を自動書き換え）:
 
 ```zsh
-NPM_HONO_PROXY_AUDIT_FIX=true npx npm-hono-proxy audit
+npx npm-hono-proxy audit fix
 ```
 
 ### 自動修正ポリシー
