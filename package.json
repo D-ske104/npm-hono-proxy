@@ -9,13 +9,13 @@
     "test": "vitest"
   },
   "bin": {
-    "npm-hono-proxy": "./bin/cli.js"
+    "npm-hono-proxy": "bin/cli.js"
   },
-  "main": "dist/index.js",
+  "main": "dist/index.mjs",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs"
     }
   },
   "files": [
