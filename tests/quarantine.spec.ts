@@ -21,15 +21,15 @@ describe('applyQuarantine (分単位の閾値)', () => {
     }
     const time = buildTimeMap(now, {
       '1.0.0': 10000, // 古い
-      '2.0.0': 5000,  // 閾値より古い
-      '3.0.0': 30,    // 新しく隔離対象
+      '2.0.0': 5000, // 閾値より古い
+      '3.0.0': 30, // 新しく隔離対象
     })
     applyQuarantine(distTags, time, versions, now, /*threshold minutes*/ 60, 'set-safe')
     expect(distTags['quarantine-latest']).toBe('3.0.0')
-    // 安全なバージョンの候補: 2.0.0 (5000分前), 1.0.0 (10000分前) → 最も新しい安全なバージョンは 2.0.0
+    // semver 最大が latest
     expect(distTags.latest).toBe('2.0.0')
-    expect(versions['3.0.0']).toBeUndefined() // 隔離対象は削除
-    expect(versions['2.0.0']).toBeDefined() // 安全なバージョンは維持
+    expect(versions['3.0.0']).toBeUndefined()
+    expect(versions['2.0.0']).toBeDefined()
   })
 
   it('安全なバージョンがない場合、set-safeポリシーはlatestを削除し、quarantine-latestのみを残す', () => {
@@ -48,10 +48,10 @@ describe('applyQuarantine (分単位の閾値)', () => {
     applyQuarantine(distTags, time, versions, now, 60, 'set-safe')
     expect(distTags['quarantine-latest']).toBe('1.2.0')
     expect(distTags.latest).toBeUndefined()
-    expect(Object.keys(versions).length).toBe(0) // 全て隔離対象
+    expect(Object.keys(versions).length).toBe(0)
   })
 
-  it('安全なバージョンがない場合、failポリシーは例外を投げる', () => {
+  it('安全なバージョンがない場合、failポリシーは例外を投げる（メッセージは閾値含む）', () => {
     const now = new Date('2025-12-01T12:00:00Z')
     const distTags: DistTags = { latest: '0.3.0' }
     const versions = {}
@@ -60,14 +60,16 @@ describe('applyQuarantine (分単位の閾値)', () => {
       '0.2.0': 10,
       '0.3.0': 2,
     })
-    expect(() => applyQuarantine(distTags, time, versions, now, 60, 'fail')).toThrow()
+    expect(() => applyQuarantine(distTags, time, versions, now, 60, 'fail')).toThrow(
+      /No safe versions available within quarantine policy/
+    )
   })
 
   it('閾値以上の場合、何も変更しない（最新バージョンが既に安全）', () => {
     const now = new Date('2025-12-01T12:00:00Z')
     const distTags: DistTags = { latest: '1.0.0' }
     const versions = { '1.0.0': {} }
-    const time = buildTimeMap(now, { '1.0.0': 600 }) // 600分 > 60分の閾値
+    const time = buildTimeMap(now, { '1.0.0': 600 })
     applyQuarantine(distTags, time, versions, now, 60, 'set-safe')
     expect(distTags['quarantine-latest']).toBeUndefined()
     expect(distTags.latest).toBe('1.0.0')
@@ -95,8 +97,8 @@ describe('applyQuarantine (分単位の閾値)', () => {
     }
     applyQuarantine(distTags, time, versions, now, 60, 'set-safe')
     expect(distTags['quarantine-latest']).toBe('2.0.0')
-    expect(distTags.latest).toBe('1.0.0') // 安全な1.0.0がlatestになる
-    expect(versions['2.0.0']).toBeUndefined() // 不正なISO文字列を持つバージョンは削除
+    expect(distTags.latest).toBe('1.0.0')
+    expect(versions['2.0.0']).toBeUndefined()
     expect(versions['1.0.0']).toBeDefined()
   })
 
@@ -129,7 +131,7 @@ describe('applyQuarantine (分単位の閾値)', () => {
     expect(distTags.latest).toBe('1.0.0')
   })
 
-  it('複数のバージョンが同じタイムスタンプを持っていても、安全なバージョンの選定は安定している', () => {
+  it('複数のバージョンが同じタイムスタンプでも semver 最大を選ぶ', () => {
     const now = new Date('2025-12-01T12:00:00Z')
     const distTags: DistTags = { latest: '3.0.0' }
     const versions = {
@@ -144,8 +146,7 @@ describe('applyQuarantine (分単位の閾値)', () => {
       '3.0.0': new Date(now.getTime() - 30 * 60 * 1000).toISOString(),
     }
     applyQuarantine(distTags, time, versions, now, 60, 'set-safe')
-    // 実装では降順ソートの最初の要素が選択される（キーの順序には依存しない）
-    expect(['1.0.0', '2.0.0']).toContain(distTags.latest!)
+    expect(distTags.latest).toBe('2.0.0')
     expect(distTags['quarantine-latest']).toBe('3.0.0')
   })
 
@@ -153,8 +154,8 @@ describe('applyQuarantine (分単位の閾値)', () => {
     const now = new Date('2025-12-01T12:00:00Z')
     const distTags: DistTags = {
       latest: '3.0.0',
-      beta: '3.0.0', // 隔離対象
-      stable: '2.0.0', // 安全
+      beta: '3.0.0',
+      stable: '2.0.0',
     }
     const versions = {
       '1.0.0': {},
@@ -168,8 +169,8 @@ describe('applyQuarantine (分単位の閾値)', () => {
     })
     applyQuarantine(distTags, time, versions, now, 60, 'set-safe')
     expect(distTags.latest).toBe('2.0.0')
-    expect(distTags.beta).toBeUndefined() // 削除される
-    expect(distTags.stable).toBe('2.0.0') // 維持される
+    expect(distTags.beta).toBeUndefined()
+    expect(distTags.stable).toBe('2.0.0')
     expect(distTags['quarantine-latest']).toBe('3.0.0')
   })
 
@@ -181,7 +182,6 @@ describe('applyQuarantine (分単位の閾値)', () => {
       '2.0.0': 5000,
       '3.0.0': 30,
     })
-    // versions に undefined を渡す
     expect(() => applyQuarantine(distTags, time, undefined, now, 60, 'set-safe')).not.toThrow()
     expect(distTags.latest).toBe('2.0.0')
   })
@@ -199,10 +199,36 @@ describe('applyQuarantine (分単位の閾値)', () => {
       '1.1.0': 20,
       '1.2.0': 5,
     })
-    // latestが隔離対象で、他に安全なバージョンがない
     expect(() => applyQuarantine(distTags, time, versions, now, 60, 'fail')).toThrow(
-      'No safe versions available within quarantine policy'
+      /No safe versions available within quarantine policy/
     )
+  })
+
+  it('時間が新しいが semver が小さいものより、semver が大きい古い安全版を選ぶ', () => {
+    const now = new Date('2025-12-01T12:00:00Z')
+    const distTags: DistTags = { latest: '2.0.0' }
+    const versions = { '1.9.9': {}, '2.0.0': {}, '1.5.0': {} }
+    const time = buildTimeMap(now, {
+      '1.9.9': 100, // 最近
+      '2.0.0': 5000, // 古い
+      '1.5.0': 6000,
+    })
+    applyQuarantine(distTags, time, versions, now, 60, 'set-safe')
+    expect(distTags.latest).toBe('2.0.0')
+  })
+
+  it('semver として不正なキーは安全候補へ含めない', () => {
+    const now = new Date('2025-12-01T12:00:00Z')
+    const distTags: DistTags = { latest: '3.0.0' }
+    const versions = { '3.0.0': {}, bad_version: {}, '2.0.0': {} }
+    const time = buildTimeMap(now, {
+      '3.0.0': 30, // 隔離対象
+      bad_version: 8000, // 形式不正
+      '2.0.0': 5000, // 安全
+    })
+    applyQuarantine(distTags, time, versions, now, 60, 'set-safe')
+    expect(distTags.latest).toBe('2.0.0')
+    expect(versions.bad_version).toBeDefined()
   })
 })
 
@@ -210,8 +236,8 @@ describe('findQuarantinedVersion', () => {
   const now = new Date('2025-12-01T12:00:00Z')
   const time = buildTimeMap(now, {
     '1.0.0': 10000, // 安全
-    '2.0.0': 5000,  // 安全
-    '3.0.0': 30,    // 隔離対象
+    '2.0.0': 5000, // 安全
+    '3.0.0': 30, // 隔離対象
   })
 
   it('隔離対象のバージョンを正しく判定し、安全な最新バージョンを返す', () => {
