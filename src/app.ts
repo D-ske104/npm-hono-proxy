@@ -33,12 +33,8 @@ export function createApp(config: AppConfig) {
     const data = await res.json()
     if (isNpmPackageMeta(data) && config.quarantineEnabled) {
       const beforeLatest = data['dist-tags']?.['latest']
-      // 時刻基準: upstreamのtimeフィールドから最大の日時を基準にする（テストと整合）
-      const times = Object.values(data.time ?? {})
-      const parsed = times
-        .map((t) => Date.parse(t))
-        .filter((n) => Number.isFinite(n))
-      const refNow = parsed.length > 0 ? new Date(Math.max(...parsed)) : new Date()
+      // 時刻基準: 現在時刻を基準にする
+      const refNow = new Date()
       const result = applyPolicy(
         data,
         refNow,

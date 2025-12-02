@@ -111,7 +111,7 @@ describe('applyQuarantine (minutes threshold)', () => {
       '3.0.0': new Date(now.getTime() - 30 * 60 * 1000).toISOString(),
     }
     applyQuarantine(distTags, time, now, 60, 'set-safe')
-    // 実装は降順ソートの先頭を選択（キー順には依存しない）。
+    // The implementation selects the first of the descending sort (does not depend on key order).
     expect(['1.0.0', '2.0.0']).toContain(distTags.latest!)
     expect(distTags['quarantine-latest']).toBe('3.0.0')
   })

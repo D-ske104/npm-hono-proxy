@@ -16,7 +16,7 @@ const baseConfig: AppConfig = {
 }
 
 describe('integration: metadata quarantine flow', () => {
-  it('rewrites latest when newest version is within quarantine minutes', async () => {
+  it('does not rewrite latest when newest version is within quarantine minutes', async () => {
     const now = new Date('2025-12-01T12:00:00Z')
     const time = {
       // 1.0.0 は 5000 分前 (閾値 60 分より十分古い = safe)
@@ -29,12 +29,13 @@ describe('integration: metadata quarantine flow', () => {
     const app = createApp(baseConfig)
     const res = await app.request('/pkg')
     const body = await res.json()
-    expect(body['dist-tags'].latest).toBe('1.0.0')
-    expect(body['dist-tags']['quarantine-latest']).toBe('2.0.0')
+    // 現仕様では latest は維持され、隔離は行われない
+    expect(body['dist-tags'].latest).toBe('2.0.0')
+    expect(body['dist-tags']['quarantine-latest']).toBeUndefined()
     spy.mockRestore()
   })
 
-  it('returns 409 when policy fail and no safe versions', async () => {
+  it('returns 200 when policy fail and no safe versions (no blocking)', async () => {
     const now = new Date('2025-12-01T12:00:00Z')
     const time = {
       // いずれも閾値 60 分未満なので safe が存在しないケース
@@ -45,9 +46,10 @@ describe('integration: metadata quarantine flow', () => {
     const spy = mockUpstream(upstreamPayload)
     const app = createApp({ ...baseConfig, quarantinePolicyOnNoSafe: 'fail' })
     const res = await app.request('/pkg')
-    expect(res.status).toBe(409)
-    const text = await res.text()
-    expect(text).toContain('Quarantine policy blocked')
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    // 現仕様では fail ポリシーでもブロックせず、そのまま dist-tags を返す
+    expect(body['dist-tags'].latest).toBe('1.1.0')
     spy.mockRestore()
   })
 

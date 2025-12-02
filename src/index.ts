@@ -16,7 +16,7 @@ const rawQuarantineMinutes = Number(
 const QUARANTINE_MINUTES = ensureNonNegativeInt(rawQuarantineMinutes)
 if (QUARANTINE_MINUTES !== rawQuarantineMinutes) {
   console.warn(
-    `⚠️  QUARANTINE_MINUTES (${rawQuarantineMinutes}) が不正値のため ${QUARANTINE_MINUTES} に補正されました`
+    `⚠️  QUARANTINE_MINUTES (${rawQuarantineMinutes}) is invalid and has been corrected to ${QUARANTINE_MINUTES}`
   )
 }
 const QUARANTINE_POLICY_ON_NO_SAFE_RAW = (getArg('quarantine-policy-on-no-safe') ?? process.env.QUARANTINE_POLICY_ON_NO_SAFE ?? 'set-safe')
