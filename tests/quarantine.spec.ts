@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { applyQuarantine } from '../src/quarantine'
+import { applyQuarantine, findQuarantinedVersion } from '../src/quarantine'
 import type { DistTags, NpmTimeMap } from '../src/types/npm'
 
 function buildTimeMap(base: Date, offsetsMinutes: Record<string, number>): NpmTimeMap {
@@ -203,5 +203,45 @@ describe('applyQuarantine (分単位の閾値)', () => {
     expect(() => applyQuarantine(distTags, time, versions, now, 60, 'fail')).toThrow(
       'No safe versions available within quarantine policy'
     )
+  })
+})
+
+describe('findQuarantinedVersion', () => {
+  const now = new Date('2025-12-01T12:00:00Z')
+  const time = buildTimeMap(now, {
+    '1.0.0': 10000, // 安全
+    '2.0.0': 5000,  // 安全
+    '3.0.0': 30,    // 隔離対象
+  })
+
+  it('隔離対象のバージョンを正しく判定し、安全な最新バージョンを返す', () => {
+    const result = findQuarantinedVersion('3.0.0', time, now, 60)
+    expect(result.quarantined).toBe(true)
+    expect(result.latestSafeVersion).toBe('2.0.0')
+  })
+
+  it('安全なバージョンを正しく判定する', () => {
+    const result = findQuarantinedVersion('2.0.0', time, now, 60)
+    expect(result.quarantined).toBe(false)
+  })
+
+  it('timeデータに存在しないバージョンは隔離対象外とする', () => {
+    const result = findQuarantinedVersion('9.9.9', time, now, 60)
+    expect(result.quarantined).toBe(false)
+  })
+
+  it('timeデータがundefinedの場合、隔離対象外とする', () => {
+    const result = findQuarantinedVersion('3.0.0', undefined, now, 60)
+    expect(result.quarantined).toBe(false)
+  })
+
+  it('安全なバージョンが一つもない場合、latestSafeVersionはundefinedになる', () => {
+    const onlyUnsafeTime = buildTimeMap(now, {
+      '1.0.0': 10,
+      '2.0.0': 20,
+    })
+    const result = findQuarantinedVersion('1.0.0', onlyUnsafeTime, now, 60)
+    expect(result.quarantined).toBe(true)
+    expect(result.latestSafeVersion).toBeUndefined()
   })
 })
