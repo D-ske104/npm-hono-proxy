@@ -80,3 +80,7 @@ npm install
 npm run build
 npm run dev
 ```
+
+## FAQ
+
+[FAQ](./docs/FAQ.md)
