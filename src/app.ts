@@ -1,26 +1,59 @@
 import { Hono } from 'hono'
-import type { AppConfig } from './config'
-import { handlePackageMetadata } from './handlers/package-metadata'
-// import { handlePackageVersion } from './handlers/package-version'
+import { filterQuarantinedMetadata } from './helpers/quarantine'
+import { createLogger } from './helpers/logger'
 
-export { type AppConfig } from './config'
+// 設定は引数で受け取る（依存性の注入）
+export type AppConfig = {
+  upstream: string
+  quarantineMinutes: number
+  logFormat: 'text' | 'ndjson'
+}
 
 export function createApp(config: AppConfig) {
-  // quarantineMinutes の下限バリデーション（負値 / NaN => 0、少数は切り捨て）
-  const safeMinutes = (Number.isFinite(config.quarantineMinutes) && config.quarantineMinutes >= 0)
-    ? Math.floor(config.quarantineMinutes)
-    : 0
   const app = new Hono()
+  const log = createLogger(config.logFormat)
 
-  // ToDo: バージョン指定エンドポイントの隔離対応を有効化
-  // // バージョン指定エンドポイント: 明示バージョン取得 + 隔離ロジック
-  // // unscoped
-  // app.get('/:pkg/:version', (c) => handlePackageVersion(c, config, safeMinutes))
-  // // scoped (@scope/package)
-  // app.get('/@:scope/:pkg/:version', (c) => handlePackageVersion(c, config, safeMinutes))
+  // 全リクエストをハンドリング
+  app.get('/*', async (c) => {
+    const path = c.req.path
+    const upstreamUrl = `${config.upstream}${path}`
 
-  // パッケージメタデータ（dist-tags / versions 一覧）
-  app.get('/*', (c) => handlePackageMetadata(c, config, safeMinutes))
+    try {
+      // 1. 上流へリクエスト
+      const res = await fetch(upstreamUrl)
+      
+      // エラー、またはJSON以外 (tarballなど) はそのまま流すかリダイレクト
+      const contentType = res.headers.get('content-type')
+      if (!res.ok || !contentType?.includes('application/json')) {
+        // リダイレクトの方が帯域負荷が低く、npm clientの挙動としても自然
+        log.info('redirect', { path, target: res.url, status: 302 })
+        return c.redirect(res.url, 302)
+      }
+
+      // 2. メタデータJSONを取得
+      const data = await res.json() as any
+
+      // 3. パッケージメタデータ形式なら検疫ロジックを通す
+      // (dist-tags と time があるものをパッケージ情報とみなす簡易判定)
+      if (data && data['dist-tags'] && data.time) {
+        const { filteredData, latestModified } = filterQuarantinedMetadata(data, config.quarantineMinutes)
+        
+        if (latestModified) {
+          log.info('quarantine', { path, info: `latest changed to ${filteredData['dist-tags']?.latest}` })
+        } else {
+          log.info('proxy', { path, status: 200 })
+        }
+        return c.json(filteredData)
+      }
+
+      // それ以外のJSON (例: 検索結果など) はそのまま返す
+      return c.json(data)
+
+    } catch (e: any) {
+      log.error('error', { path, message: e.message })
+      return c.text('Internal Server Error', 500)
+    }
+  })
 
   return app
 }
