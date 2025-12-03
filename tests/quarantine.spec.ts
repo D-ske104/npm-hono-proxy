@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { filterQuarantinedMetadata } from '../src/helpers/quarantine'
 import type { DistTags, NpmTimeMap, NpmMeta } from '../src/types/npm'
 
@@ -21,6 +21,14 @@ function createMeta(distTags: DistTags, time: NpmTimeMap, versions: Record<strin
 }
 
 describe('filterQuarantinedMetadata (分単位の閾値)', () => {
+  beforeEach(() => {  
+    vi.useFakeTimers()  
+  })  
+
+  afterEach(() => {  
+    vi.useRealTimers()  
+  })
+
   it('最新バージョンが閾値未満の場合、quarantine-latestに退避し、安全なバージョンにlatestを付け替える', () => {
     const now = new Date('2025-12-01T12:00:00Z')
     // Mock Date.now

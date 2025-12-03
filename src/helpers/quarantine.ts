@@ -4,7 +4,9 @@ import { NpmMeta } from '../types/npm'
 /**
  * メタデータから指定期間内の新しいバージョンを除外する
  */
-export function filterQuarantinedMetadata(data: NpmMeta, thresholdMinutes: number) {
+export function filterQuarantinedMetadata(_data: NpmMeta, thresholdMinutes: number) {
+  // ディープコピーして元データを変更しないようにする
+  const data = JSON.parse(JSON.stringify(_data)) as NpmMeta 
   const now = Date.now()
   const thresholdMs = thresholdMinutes * 60 * 1000
   
@@ -15,8 +17,11 @@ export function filterQuarantinedMetadata(data: NpmMeta, thresholdMinutes: numbe
   if (data.time) {
     for (const [version, timeStr] of Object.entries(data.time)) {
       if (!semver.valid(version)) continue
+      // メタデータキーの場合はスキップ
+      if (version === 'created' || version === 'modified') continue  
       
       const publishTime = new Date(timeStr).getTime()
+      if (!Number.isFinite(publishTime)) continue  
       if (now - publishTime >= thresholdMs) {
         safeVersions.add(version)
       }
