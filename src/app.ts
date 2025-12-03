@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 import { filterQuarantinedMetadata } from './helpers/quarantine'
 import { createLogger } from './helpers/logger'
+import type { NpmMeta } from './types/npm'
 
 // 設定は引数で受け取る（依存性の注入）
 export type AppConfig = {
@@ -31,7 +32,7 @@ export function createApp(config: AppConfig) {
       }
 
       // 2. メタデータJSONを取得
-      const data = await res.json() as any
+      const data = await res.json() as NpmMeta
 
       // 3. パッケージメタデータ形式なら検疫ロジックを通す
       // (dist-tags と time があるものをパッケージ情報とみなす簡易判定)
