@@ -54,7 +54,7 @@ npm install
 | ポート | `--port=<number>` | `PORT` | `4873` | HTTP 待受ポート |
 | 上流レジストリ | `--upstream=<url>` | `UPSTREAM` | `https://registry.npmjs.org` | 取得元の Registry ベースURL |
 | 隔離期間(分) | `--quarantine-minutes=<minutes>` | `QUARANTINE_MINUTES` | `30240` (21日) | 新規バージョンを隔離する長さ |
-| ログ形式 | `--log-format=text|ndjson` | `LOG_FORMAT` | `text` | 構造化出力が欲しい場合 `ndjson` |
+| ログ形式 | `--log-format=text\|ndjson` | `LOG_FORMAT` | `text` | 構造化出力が欲しい場合 `ndjson` |
 
 ### 起動例
 
